@@ -1,0 +1,54 @@
+name: Deploy React to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Automatically dumps EVERY GitHub secret into a .env file
+      - name: Make Env File
+        uses: spicizanu/create-env-file@v2
+        with:
+          file-name: '.env'
+        env:
+          # This passes the entire JSON string of secrets dynamically
+          # Make sure your secret keys are named with the correct prefix (e.g., VITE_ or REACT_APP_)
+          ALL_SECRETS: ${{ toJson(secrets) }}
+
+      - name: Build React App
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist' # Change to './build' if using Create React App
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
