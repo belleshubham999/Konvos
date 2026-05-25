@@ -28,15 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Automatically dumps EVERY GitHub secret into a .env file
-      - name: Make Env File
-        uses: spicizanu/create-env-file@v2
-        with:
-          file-name: '.env'
-        env:
-          # This passes the entire JSON string of secrets dynamically
-          # Make sure your secret keys are named with the correct prefix (e.g., VITE_ or REACT_APP_)
-          ALL_SECRETS: ${{ toJson(secrets) }}
+      # Native shell command to dump all secrets safely into a .env file
+      - name: Generate .env File
+        run: |
+          echo "${{ secrets.VITE_GEMINI_API_KEY && format('VITE_GEMINI_API_KEY={0}', secrets.VITE_GEMINI_API_KEY) }}" >> .env
+          echo "${{ secrets.STREAM_API_KEY && format('STREAM_API_KEY={0}', secrets.STREAM_API_KEY) }}" >> .env
+          echo "${{ secrets.STREAM_API_SECRET && format('STREAM_API_SECRET={0}', secrets.STREAM_API_SECRET) }}" >> .env
 
       - name: Build React App
         run: npm run build
@@ -47,7 +44,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist' # Change to './build' if using Create React App
+          path: './dist' # Use './build' if using Create React App
 
       - name: Deploy to GitHub Pages
         id: deployment
